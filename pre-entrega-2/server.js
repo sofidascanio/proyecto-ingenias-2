@@ -80,7 +80,7 @@ app.post('/supermercado', async (req, res) => {
 
 // PUT /supermercado/:id
 app.put('/supermercado/:id', async (req, res) => {
-    const codigo = req.params.id;
+    const id = req.params.id;
     const nuevosDatos = req.body;
 
     if (!nuevosDatos) {
@@ -130,15 +130,22 @@ app.put('/supermercado/:id', async (req, res) => {
         log.precio = "El valor de precio tiene que ser un numero mayor o igual a 0";
     }
 
-    db.collection('supermercado').updateOne({ codigo: parseInt(codigo) }, { $set: producto }).then(() => {
-        console.log('Producto modificado');
-        res.status(200).send(log);
+    db.collection('supermercado').updateOne({ id: parseInt(id) }, { $set: producto }).then((resultado) => {
+        // matchedCount: productos con el filtro (id)
+        // modifiedCount: productos modificados 
+        if (resultado.matchedCount === 0) {
+            res.status(404).send(`No se encontro producto con el codigo proporcionado: ${id}`);
+        } else {
+            console.log('Producto modificado');
+            res.status(200).send(log);
+        }
     }).catch((error) => {
         console.log(error);
         res.status(500).json( {descripcion: 'Error al modificar el producto' });
     }).finally(() => {
         disconnectFromMongoDB();
     });
+
 }); 
 
 // DELETE /supermercado/:id

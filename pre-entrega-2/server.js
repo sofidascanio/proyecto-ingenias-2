@@ -40,30 +40,85 @@ app.get('/supermercado', async (req, res) => {
     res.json(supermercado);
 });
 
+app.get('/supermercado/:codigo', async (req,res)=>{
+    const productoId= parseInt(req.params.codigo)||0;
+    const client = await connectToMongoDB();
+        if(!client){
+            return res.status(500).send('Error al conectarse a MongoDB');
+        }
+    const db = client.db('supermercado');
+    const producto= await db.collection('productos').findOne({codigo:productoId});
+    if(!producto){
+        res.status(404).send(`El código ${productoId} no se encuentra cargado`);
+    }else{
+        res.json(producto)
+    }
+    await disconnectFromMongoDB();
+});
+
+app.get('/supermercado/nombre/:nombre', async (req,res)=>{
+    const producto = req.params.nombre.trim().toLowerCase();
+    const client = await connectToMongoDB();
+        if(!client){
+            return res.status(500).send('Error al conectarse a MongoDB');
+        }
+    const db = client.db('supermercado');
+    const resultados = await db.collection('productos').find({ nombre: {$regex: producto, $options:'i'}}).toArray();
+    if(resultados.length===0){
+        res.status(404).send(`No se encontraron productos con el nombre ${producto}`);
+    }else{
+        res.json(resultados);
+    }
+    await disconnectFromMongoDB();
+});
+
+app.get('/supermercado/precio/:precio', async (req,res)=>{
+    const precio = parseFloat(req.params.precio);
+    if (isNaN(precio)){
+        return res.status(400).send('El valor ingresado no es válido');
+    }
+    const client = await connectToMongoDB();
+        if(!client){
+            return res.status(500).send('Error al conectarse a MongoDB');
+        }
+    const db = client.db('supermercado');
+    const resultados = await db.collection('productos').find({precio: {$gte: precio}}).toArray();
+    if(resultados.length===0){
+        res.status(404).send(`No se encontraron productos de S${precio} o mayor valor`);
+    }else{
+        res.json(resultados);
+    }
+    await disconnectFromMongoDB();
+});
+
+app.get('/supermercado/categoria/:categoria', async (req,res)=>{
+    const categoriaP = req.params.categoria.trim().toLowerCase();
+    const client = await connectToMongoDB();
+        if(!client){
+            return res.status(500).send('Error al conectarse a MongoDB');
+        }
+    const db = client.db('supermercado');
+    const resultados = await db.collection('productos').find({categoria: {$regex: categoriaP, $options:'i'}}).toArray();
+    if(resultados.length===0){
+        res.status(404).send(`No se encontraron productos de la categoria ${categoriaP}`);
+    }else{
+        res.json(resultados);
+    }
+    await disconnectFromMongoDB();
+});
 // Pide al menos dos GET para buscar datos
 // Cada producto tiene: id, nombre, precio, categoria
 
 // GET /supermercado/:id
-app.get('/supermercado/:id', async (req, res) => {
-    // Consulta por ID
-});
+
 
 // GET /supermercado/nombre/:nombre
-app.get('/supermercado/nombre/:nombre', async (req, res) => {
-    // Consulta por nombre
-    // Busqueda parcial
-});
+
 
 // GET /supermercado/precio/:precio
-app.get('/supermercado/precio/:precio', async (req, res) => {
-    // Consulta por precio
-});
 
 // GET /supermercado/categoria/:categoria
-app.get('/supermercado/categoria/:categoria', async (req, res) => {
-    // opcional, pide dos GET para buscar datos
-    // preguntar que onda las categorias, si son fijas o se pueden agregar otras random
-});
+
 
 // POST /supermercado
 app.post('/supermercado', async (req, res) => {

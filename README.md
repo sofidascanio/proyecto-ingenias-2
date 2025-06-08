@@ -24,7 +24,8 @@
 |:--------:|-----|-------------|
 | GET | [/supermercado](/supermercado) | Obtener todos los productos |
 | GET | [/supermercado/:id](/supermercado) | Obtener un producto especifico |
-| GET | [/supermercado/nombre](/supermercado) | Obtener todos los producto que coincidan con *nombre*|
+| GET | [/supermercado/nombre](/supermercado) | Obtener todos los productos que coincidan con *nombre*|
+| GET | [/supermercado/categoria](/supermercado) | Obtener todos los productos que coincidan con *categoria*|
 | POST | [/supermercado](/supermercado) | Agregar un nuevos producto |
 | PUT | [/supermercado/:id](/supermercado) | Modificar un producto existente |
 | DELETE | [/supermercado/:id](/supermercado) | Eliminar un producto existente |
@@ -32,7 +33,7 @@
 
 ----
 
-##### Metodo ` PUT `
+### Metodo ` PUT `
 Para modificar los valores de un producto existente. Se puede modificar un campo, o varios.
 
 Solo se pueden modificar los campos: ***nombre***, ***categoria*** y ***precio***. 

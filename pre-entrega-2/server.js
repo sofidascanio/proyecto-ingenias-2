@@ -18,8 +18,6 @@ app.get('/', (req, res) => {
 
 // GET /supermercado
 app.get('/supermercado', async (req, res) => {
-    // Listar todo
-
     const client = await connectToMongoDB();
 
     if (!client) {
@@ -40,6 +38,7 @@ app.get('/supermercado', async (req, res) => {
     res.json(supermercado);
 });
 
+// GET /supermercado/:codigo
 app.get('/supermercado/:codigo', async (req,res)=>{
     const productoId= parseInt(req.params.codigo)||0;
     const client = await connectToMongoDB();
@@ -47,7 +46,7 @@ app.get('/supermercado/:codigo', async (req,res)=>{
             return res.status(500).send('Error al conectarse a MongoDB');
         }
     const db = client.db('supermercado');
-    const producto= await db.collection('productos').findOne({codigo:productoId});
+    const producto= await db.collection('supermercado').findOne({codigo:productoId});
     if(!producto){
         res.status(404).send(`El código ${productoId} no se encuentra cargado`);
     }else{
@@ -56,6 +55,7 @@ app.get('/supermercado/:codigo', async (req,res)=>{
     await disconnectFromMongoDB();
 });
 
+// GET /supermercado/nombre/:nombre
 app.get('/supermercado/nombre/:nombre', async (req,res)=>{
     const producto = req.params.nombre.trim().toLowerCase();
     const client = await connectToMongoDB();
@@ -63,7 +63,7 @@ app.get('/supermercado/nombre/:nombre', async (req,res)=>{
             return res.status(500).send('Error al conectarse a MongoDB');
         }
     const db = client.db('supermercado');
-    const resultados = await db.collection('productos').find({ nombre: {$regex: producto, $options:'i'}}).toArray();
+    const resultados = await db.collection('supermercado').find({ nombre: {$regex: producto, $options:'i'}}).toArray();
     if(resultados.length===0){
         res.status(404).send(`No se encontraron productos con el nombre ${producto}`);
     }else{
@@ -72,6 +72,7 @@ app.get('/supermercado/nombre/:nombre', async (req,res)=>{
     await disconnectFromMongoDB();
 });
 
+// GET /supermercado/precio/:precio
 app.get('/supermercado/precio/:precio', async (req,res)=>{
     const precio = parseFloat(req.params.precio);
     if (isNaN(precio)){
@@ -82,7 +83,7 @@ app.get('/supermercado/precio/:precio', async (req,res)=>{
             return res.status(500).send('Error al conectarse a MongoDB');
         }
     const db = client.db('supermercado');
-    const resultados = await db.collection('productos').find({precio: {$gte: precio}}).toArray();
+    const resultados = await db.collection('supermercado').find({precio: {$gte: precio}}).toArray();
     if(resultados.length===0){
         res.status(404).send(`No se encontraron productos de S${precio} o mayor valor`);
     }else{
@@ -91,6 +92,7 @@ app.get('/supermercado/precio/:precio', async (req,res)=>{
     await disconnectFromMongoDB();
 });
 
+// GET /supermercado/categoria/:categoria
 app.get('/supermercado/categoria/:categoria', async (req,res)=>{
     const categoriaP = req.params.categoria.trim().toLowerCase();
     const client = await connectToMongoDB();
@@ -98,7 +100,7 @@ app.get('/supermercado/categoria/:categoria', async (req,res)=>{
             return res.status(500).send('Error al conectarse a MongoDB');
         }
     const db = client.db('supermercado');
-    const resultados = await db.collection('productos').find({categoria: {$regex: categoriaP, $options:'i'}}).toArray();
+    const resultados = await db.collection('supermercado').find({categoria: {$regex: categoriaP, $options:'i'}}).toArray();
     if(resultados.length===0){
         res.status(404).send(`No se encontraron productos de la categoria ${categoriaP}`);
     }else{
@@ -106,18 +108,6 @@ app.get('/supermercado/categoria/:categoria', async (req,res)=>{
     }
     await disconnectFromMongoDB();
 });
-// Pide al menos dos GET para buscar datos
-// Cada producto tiene: id, nombre, precio, categoria
-
-// GET /supermercado/:id
-
-
-// GET /supermercado/nombre/:nombre
-
-
-// GET /supermercado/precio/:precio
-
-// GET /supermercado/categoria/:categoria
 
 
 // POST /supermercado
@@ -144,20 +134,11 @@ app.post('/supermercado', async (req, res) => {
         disconnectFromMongoDB();
     });
 
-    
-    
-    // ID: ver como manejar, autoincremental no creo que sea
-    // digito de 4 numeros, generar uno random¿? y chequear
-    // Lo manejamos aca, no importa que se mande en el request
-    
-    // chequear que nombre sea un string valido, regex¿?
-    // chequear que precio sea un numero mayor o igual a 0
-    // chequear categoria, si hay algun listado o es un campo libre
 });
 
 // PUT /supermercado/:id
-app.put('/supermercado/:id', async (req, res) => {
-    const id = req.params.id;
+app.put('/supermercado/:codigo', async (req, res) => {
+    const codigo = req.params.codigo;
     const nuevosDatos = req.body;
 
     if (!nuevosDatos) {
@@ -207,12 +188,13 @@ app.put('/supermercado/:id', async (req, res) => {
         log.precio = "El valor de precio tiene que ser un numero mayor o igual a 0";
     }
 
-    db.collection('supermercado').updateOne({ codigo: parseInt(id) }, { $set: producto }).then((resultado) => {
-        // matchedCount: productos con el filtro (id)
+    db.collection('supermercado').updateOne({ codigo: parseInt(codigo) }, { $set: producto }).then((resultado) => {
+        // matchedCount: productos con el filtro (codigo)
         // modifiedCount: productos modificados 
         if (resultado.matchedCount === 0) {
-            res.status(404).send(`No se encontro producto con el codigo proporcionado: ${id}`);
+            res.status(404).send(`No se encontro producto con el codigo proporcionado: ${codigo}`);
         } else {
+            // codigo 400
             console.log('Producto modificado');
             res.status(200).send(log);
         }

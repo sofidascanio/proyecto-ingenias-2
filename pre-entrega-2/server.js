@@ -68,11 +68,33 @@ app.get('/supermercado/categoria/:categoria', async (req, res) => {
 // POST /supermercado
 app.post('/supermercado', async (req, res) => {
     // Agregar nuevo producto
+    const nuevoProducto = req.body;
+    if(nuevoProducto===undefined){
+        res.status(400).send('Error en el formato de datos a crear');
+    }
+    const client = await connectToMongoDB();
+    if(!client){
+        res.status(500).send('Error al conectarse con MongoDB');
+    }
+    const collection = client.db('supermercado').collection('supermercado');
+    collection.insertOne(nuevoProducto)
+    .then(()=>{
+        console.log('Nuevo producto creado');
+        res.status(201).send('Nuevo producto agregado correctamente');
+    })
+    .catch(error =>{
+        console.error(error);
+    })
+    .finally(()=>{
+        disconnectFromMongoDB();
+    });
 
+    
+    
     // ID: ver como manejar, autoincremental no creo que sea
     // digito de 4 numeros, generar uno random¿? y chequear
     // Lo manejamos aca, no importa que se mande en el request
-
+    
     // chequear que nombre sea un string valido, regex¿?
     // chequear que precio sea un numero mayor o igual a 0
     // chequear categoria, si hay algun listado o es un campo libre

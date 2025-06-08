@@ -170,10 +170,38 @@ app.put('/supermercado/:id', async (req, res) => {
 
 }); 
 
-// DELETE /supermercado/:id
-app.delete('/supermercado/:id', async (req, res) => {
-    // Borrar producto
-}); 
+//DELETE: Eliminar elementos del catálago por código
+app.delete('/supermercado/:codigo', async (req, res) => {
+    const codArt = parseInt(req.params.codigo);
+        if (isNaN(codArt)) {  
+            res.status(400).json({ error: 'El codigo debe ser un número válido' });
+            return;
+        }
+    const client = await connectToMongoDB();
+        if (!client){
+            res.status(500).json({error: 'Error al conectar con la base de datos'});
+            return;
+        }
+    client.connect()
+    .then(() => {
+        const catalogo = client.db('supermercado').collection('supermercado');    
+        return catalogo.deleteOne({codigo : codArt});
+    })
+    .then((resultado) => {
+        if (resultado.deletedCount === 0) {
+            res.status(404).json({error: 'No se ha encontrado el código solcitado', codArt});
+        } else {
+            console.log('Artículo eliminado')
+            res.status(204).json({mensaje:'Artículo eliminado con exito'});
+        }
+    })
+    .catch(error => {
+        console.error(error);
+    })
+    .finally(() => {
+        disconnectFromMongoDB();
+    });
+});
 
 // Manejo de rutas invalidas
 app.use((req, res) => {

@@ -130,7 +130,7 @@ app.put('/supermercado/:id', async (req, res) => {
         log.precio = "El valor de precio tiene que ser un numero mayor o igual a 0";
     }
 
-    db.collection('supermercado').updateOne({ id: parseInt(id) }, { $set: producto }).then((resultado) => {
+    db.collection('supermercado').updateOne({ codigo: parseInt(id) }, { $set: producto }).then((resultado) => {
         // matchedCount: productos con el filtro (id)
         // modifiedCount: productos modificados 
         if (resultado.matchedCount === 0) {

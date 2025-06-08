@@ -80,9 +80,65 @@ app.post('/supermercado', async (req, res) => {
 
 // PUT /supermercado/:id
 app.put('/supermercado/:id', async (req, res) => {
-    // Modificar producto existente
+    const codigo = req.params.id;
+    const nuevosDatos = req.body;
 
-    // Modificar solo nombre, precio, categoria ¿?
+    if (!nuevosDatos) {
+        res.status(400).send('Error en el formato de datos recibido');
+        return;
+    }
+
+    const client = await connectToMongoDB();
+
+    if (!client) {
+        res.status(500).send('Error al conectarse a MongoDB');
+        return;
+    }
+
+    const db = client.db('supermercado');
+
+    producto = { }
+    log = { }
+    // Si existen nombre y categoria en el request, los agrega a producto
+    // Solo se guardan si son string
+    // pregunto por separado porque puede no existir, chequear
+    if (nuevosDatos.nombre) {
+        if (typeof nuevosDatos.nombre === 'string') {
+            producto.nombre = nuevosDatos.nombre;
+            log.nombre = `Se modifico el nombre del producto: ${producto.nombre}`;
+        }
+        else {
+            log.nombre = "El nombre del producto tiene que ser una cadena de caracteres valida";
+        }
+    }   
+    if (nuevosDatos.categoria) {
+        if (typeof nuevosDatos.categoria === 'string') {
+            producto.categoria = nuevosDatos.categoria;
+            log.categoria = `Se modifico la categoria del producto: ${producto.categoria}`;
+        }
+        else {
+            log.categoria = "La categoria del producto tiene que ser una cadena de caracteres valida";
+        }
+    }   
+
+    // Si existe un precio, es un numero, mayor o igual a 0, lo guarda
+    // Si no pregunto explicitamente con el nuevosDatos.precio si es igual a 0, no entra
+    if ((nuevosDatos.precio || nuevosDatos.precio === 0) && (typeof nuevosDatos.precio === 'number' && nuevosDatos.precio >= 0)) {
+        producto.precio = nuevosDatos.precio;
+        log.precio = `Se modifico el precio del producto: ${producto.precio}`;
+    } else {
+        log.precio = "El valor de precio tiene que ser un numero mayor o igual a 0";
+    }
+
+    db.collection('supermercado').updateOne({ codigo: parseInt(codigo) }, { $set: producto }).then(() => {
+        console.log('Producto modificado');
+        res.status(200).send(log);
+    }).catch((error) => {
+        console.log(error);
+        res.status(500).json( {descripcion: 'Error al modificar el producto' });
+    }).finally(() => {
+        disconnectFromMongoDB();
+    });
 }); 
 
 // DELETE /supermercado/:id

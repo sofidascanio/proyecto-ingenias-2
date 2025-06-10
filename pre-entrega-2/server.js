@@ -41,15 +41,20 @@ app.get('/supermercado', async (req, res) => {
 // GET /supermercado/:codigo
 app.get('/supermercado/:codigo', async (req,res)=>{
     const productoId= parseInt(req.params.codigo)||0;
+
     const client = await connectToMongoDB();
-        if(!client){
-            return res.status(500).send('Error al conectarse a MongoDB');
-        }
+
+    if(!client){
+        return res.status(500).send('Error al conectarse a MongoDB');
+    }
+
     const db = client.db('supermercado');
+
     const producto= await db.collection('supermercado').findOne({codigo:productoId});
+
     if(!producto){
         res.status(404).send(`El código ${productoId} no se encuentra cargado`);
-    }else{
+    } else {
         res.json(producto)
     }
     await disconnectFromMongoDB();
@@ -58,15 +63,20 @@ app.get('/supermercado/:codigo', async (req,res)=>{
 // GET /supermercado/nombre/:nombre
 app.get('/supermercado/nombre/:nombre', async (req,res)=>{
     const producto = req.params.nombre.trim().toLowerCase();
+
     const client = await connectToMongoDB();
-        if(!client){
-            return res.status(500).send('Error al conectarse a MongoDB');
-        }
+
+    if(!client){
+        return res.status(500).send('Error al conectarse a MongoDB');
+    }
+
     const db = client.db('supermercado');
+
     const resultados = await db.collection('supermercado').find({ nombre: {$regex: producto, $options:'i'}}).toArray();
+
     if(resultados.length===0){
         res.status(404).send(`No se encontraron productos con el nombre ${producto}`);
-    }else{
+    } else {
         res.json(resultados);
     }
     await disconnectFromMongoDB();
@@ -75,15 +85,21 @@ app.get('/supermercado/nombre/:nombre', async (req,res)=>{
 // GET /supermercado/precio/:precio
 app.get('/supermercado/precio/:precio', async (req,res)=>{
     const precio = parseFloat(req.params.precio);
+
     if (isNaN(precio)){
         return res.status(400).send('El valor ingresado no es válido');
     }
+
     const client = await connectToMongoDB();
-        if(!client){
-            return res.status(500).send('Error al conectarse a MongoDB');
-        }
+
+    if(!client){
+        return res.status(500).send('Error al conectarse a MongoDB');
+    }
+
     const db = client.db('supermercado');
+
     const resultados = await db.collection('supermercado').find({precio: {$gte: precio}}).toArray();
+
     if(resultados.length===0){
         res.status(404).send(`No se encontraron productos de S${precio} o mayor valor`);
     }else{
@@ -95,33 +111,43 @@ app.get('/supermercado/precio/:precio', async (req,res)=>{
 // GET /supermercado/categoria/:categoria
 app.get('/supermercado/categoria/:categoria', async (req,res)=>{
     const categoriaP = req.params.categoria.trim().toLowerCase();
+
     const client = await connectToMongoDB();
-        if(!client){
-            return res.status(500).send('Error al conectarse a MongoDB');
-        }
+
+    if(!client){
+        return res.status(500).send('Error al conectarse a MongoDB');
+    }
+
     const db = client.db('supermercado');
+
     const resultados = await db.collection('supermercado').find({categoria: {$regex: categoriaP, $options:'i'}}).toArray();
+
     if(resultados.length===0){
         res.status(404).send(`No se encontraron productos de la categoria ${categoriaP}`);
-    }else{
+    } else {
         res.json(resultados);
     }
+
     await disconnectFromMongoDB();
 });
 
 
 // POST /supermercado
 app.post('/supermercado', async (req, res) => {
-    // Agregar nuevo producto
     const nuevoProducto = req.body;
+
     if(nuevoProducto===undefined){
         res.status(400).send('Error en el formato de datos a crear');
     }
+
     const client = await connectToMongoDB();
+
     if(!client){
         res.status(500).send('Error al conectarse con MongoDB');
     }
+
     const collection = client.db('supermercado').collection('supermercado');
+    
     collection.insertOne(nuevoProducto)
     .then(()=>{
         console.log('Nuevo producto creado');
@@ -136,7 +162,7 @@ app.post('/supermercado', async (req, res) => {
 
 });
 
-// PUT /supermercado/:id
+// PUT /supermercado/:codigo
 app.put('/supermercado/:codigo', async (req, res) => {
     const codigo = req.params.codigo;
     const nuevosDatos = req.body;
@@ -157,9 +183,7 @@ app.put('/supermercado/:codigo', async (req, res) => {
 
     producto = { }
     log = { }
-    // Si existen nombre y categoria en el request, los agrega a producto
-    // Solo se guardan si son string
-    // pregunto por separado porque puede no existir, chequear
+
     if (nuevosDatos.nombre) {
         if (typeof nuevosDatos.nombre === 'string') {
             producto.nombre = nuevosDatos.nombre;
@@ -179,8 +203,6 @@ app.put('/supermercado/:codigo', async (req, res) => {
         }
     }   
 
-    // Si existe un precio, es un numero, mayor o igual a 0, lo guarda
-    // Si no pregunto explicitamente con el nuevosDatos.precio si es igual a 0, no entra
     if ((nuevosDatos.precio || nuevosDatos.precio === 0) && (typeof nuevosDatos.precio === 'number' && nuevosDatos.precio >= 0)) {
         producto.precio = nuevosDatos.precio;
         log.precio = `Se modifico el precio del producto: ${producto.precio}`;
@@ -189,12 +211,9 @@ app.put('/supermercado/:codigo', async (req, res) => {
     }
 
     db.collection('supermercado').updateOne({ codigo: parseInt(codigo) }, { $set: producto }).then((resultado) => {
-        // matchedCount: productos con el filtro (codigo)
-        // modifiedCount: productos modificados 
         if (resultado.matchedCount === 0) {
             res.status(404).send(`No se encontro producto con el codigo proporcionado: ${codigo}`);
         } else {
-            // codigo 400
             console.log('Producto modificado');
             res.status(200).send(log);
         }
@@ -207,18 +226,22 @@ app.put('/supermercado/:codigo', async (req, res) => {
 
 }); 
 
-//DELETE: Eliminar elementos del catálago por código
+// DELETE /supermercado/:codigo
 app.delete('/supermercado/:codigo', async (req, res) => {
     const codArt = parseInt(req.params.codigo);
-        if (isNaN(codArt)) {  
-            res.status(400).json({ error: 'El codigo debe ser un número válido' });
-            return;
-        }
+
+    if (isNaN(codArt)) {  
+        res.status(400).json({ error: 'El codigo debe ser un número válido' });
+        return;
+    }
+
     const client = await connectToMongoDB();
-        if (!client){
-            res.status(500).json({error: 'Error al conectar con la base de datos'});
-            return;
-        }
+
+    if (!client){
+        res.status(500).json({error: 'Error al conectar con la base de datos'});
+        return;
+    }
+
     client.connect()
     .then(() => {
         const catalogo = client.db('supermercado').collection('supermercado');    

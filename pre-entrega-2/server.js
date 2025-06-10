@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const { connectToMongoDB, disconnectFromMongoDB } = require('./src/mongodb');
 const PORT = process.env.PORT || 3000;
+const { ObjectId } = require('mongodb'); //Para poder hacer la busqueda por id
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
@@ -252,7 +253,41 @@ app.delete('/supermercado/:codigo', async (req, res) => {
             res.status(404).json({error: 'No se ha encontrado el código solcitado', codArt});
         } else {
             console.log('Artículo eliminado')
-            res.status(204).json({mensaje:'Artículo eliminado con exito'});
+            res.status(204).json();
+        }
+    })
+    .catch(error => {
+        console.error(error);
+    })
+    .finally(() => {
+        disconnectFromMongoDB();
+    });
+});
+
+//DELETE: Eliminar elementos del catálago por _id
+app.delete('/supermercado/:id', async (req, res) => {
+    const id = new ObjectId(req.params.id);
+        //transformo id en un nuevo objetoId (para que Mongo me tome la petición)
+        if (!ObjectId.isValid(id)) {
+            res.status(400).json({error: 'ID inválido'});
+            return;
+        }
+    const client = await connectToMongoDB();
+        if (!client){
+            res.status(500).json({error: 'Error al conectar con la base de datos'});
+            return;
+        }
+    client.connect()
+    .then(() => {
+        const catalogo = client.db('supermercado').collection('supermercado');    
+        return catalogo.deleteOne({ _id : id}); 
+    })
+    .then((resultado) => {
+        if (resultado.deletedCount === 0) {
+            res.status(404).json({error: 'No se ha encontrado el ID solcitado'});
+        } else {
+            console.log('Artículo eliminado')
+            res.status(204).json();
         }
     })
     .catch(error => {

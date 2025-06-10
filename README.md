@@ -23,21 +23,22 @@
 | PETICIÓN | URL | DESCRIPCIÓN |
 |:--------:|-----|-------------|
 | GET | [/supermercado](/supermercado) | Obtener todos los productos |
-| GET | [/supermercado/:codigo](/supermercado) | Obtener un producto especifico |
+| GET | [/supermercado/:id](/supermercado) | Obtener un producto especifico |
 | GET | [/supermercado/nombre/:nombre](/supermercado) | Obtener todos los productos que coincidan con *nombre*|
 | GET | [/supermercado/precio/:precio](/supermercado) | Obtener todos los productos que tengan un precio mayor o igual a *precio*|
 | GET | [/supermercado/precio/:categoria](/supermercado) | Obtener todos los productos que coincidan con *categoria*|
 | POST | [/supermercado](/supermercado) | Agregar un nuevos producto |
-| PUT | [/supermercado/:codigo](/supermercado) | Modificar un producto existente |
-| DELETE | [/supermercado/:codigo](/supermercado) | Eliminar un producto existente |
+| PUT | [/supermercado/:id](/supermercado) | Modificar un producto existente |
+| DELETE | [/supermercado/:id](/supermercado) | Eliminar un producto existente |
 
 
 ------
+## Busquedas de Productos
 ### ` GET /supermercado ` 
 
 Para listar todos los productos del supermercado
 
-### ` GET /supermercado/:codigo `
+### ` GET /supermercado/:id `
 
 Para obtener un producto especifico, indicando el numero de código
 ``` 
@@ -61,10 +62,14 @@ Para obtener todos los productos donde la categoria coincida total o parcialment
 ``` 
 GET /supermercado/categoria/limpieza
 ```
-
+----
+## Agregar Producto
 ### ` POST /supermercado `
 
 Para agregar un producto nuevo al supermercado. Los campos son: ***codigo***, ***nombre***, ***categoria*** y ***precio***.
+* ***codigo*** debe ser un número mayor a 0
+* ***nombre*** y ***categoria*** deben ser un string valido
+* ***precio*** debe ser un número mayor o igual a 0
 ``` javascript
 	{
 		nombre: "Chocolate",
@@ -73,14 +78,16 @@ Para agregar un producto nuevo al supermercado. Los campos son: ***codigo***, **
 	}
 
 ```
-
-### ` PUT /supermercado/:codigo `
+-----
+## Modificar Producto
+### ` PUT /supermercado/:id `
 
 Para modificar los valores de un producto existente. Se puede modificar un campo, o varios.
 
-Solo se pueden modificar los campos: ***nombre***, ***categoria*** y ***precio***. 
+Solo se pueden modificar los campos: ***codigo***, ***nombre***, ***categoria*** y ***precio***. 
+* ***codigo*** debe ser un número mayor a 0
 * ***nombre*** y ***categoria*** deben ser un string valido
-* ***precio*** debe ser un numero mayor o igual a 0
+* ***precio*** debe ser un número mayor o igual a 0
 ``` javascript
 	{
 		nombre: "Azucar",
@@ -89,10 +96,11 @@ Solo se pueden modificar los campos: ***nombre***, ***categoria*** y ***precio**
 	}
 
 ```
+------
+## Eliminar Producto
+### ` DELETE /supermercado/:id `
 
-### ` DELETE /supermercado/:codigo `
-
-Para eliminar un producto del supermercado, se indica el numero de código
+Para eliminar un producto del supermercado, se indica el ID del producto.
 ``` 
 DELETE /supermercado/5678
 ```

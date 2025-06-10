@@ -39,8 +39,8 @@ app.get('/supermercado', async (req, res) => {
     res.json(supermercado);
 });
 
-// GET /supermercado/:codigo
-app.get('/supermercado/:codigo', async (req,res)=>{
+// GET /supermercado/:id
+app.get('/supermercado/:id', async (req,res)=>{
     const productoId= parseInt(req.params.codigo)||0;
 
     const client = await connectToMongoDB();
@@ -163,9 +163,14 @@ app.post('/supermercado', async (req, res) => {
 
 });
 
-// PUT /supermercado/:codigo
-app.put('/supermercado/:codigo', async (req, res) => {
-    const codigo = req.params.codigo;
+// PUT /supermercado/:id
+app.put('/supermercado/:id', async (req, res) => {
+    const id = new ObjectId(req.params.id);
+
+    if (!ObjectId.isValid(id)) {
+        res.status(400).json( {error: 'ID inválido'} );
+        return;
+    }
     const nuevosDatos = req.body;
 
     if (!nuevosDatos) {
@@ -184,6 +189,13 @@ app.put('/supermercado/:codigo', async (req, res) => {
 
     producto = { }
     log = { }
+
+    if (nuevosDatos.codigo && (typeof nuevosDatos.codigo === 'number' && nuevosDatos.codigo > 0)) {
+        producto.codigo = nuevosDatos.codigo;
+        log.codigo = `Se modifico el codigo del producto: ${producto.codigo}`;
+    } else {
+        log.codigo = "El valor de codigo tiene que ser un numero mayor a 0";
+    }
 
     if (nuevosDatos.nombre) {
         if (typeof nuevosDatos.nombre === 'string') {
@@ -211,9 +223,9 @@ app.put('/supermercado/:codigo', async (req, res) => {
         log.precio = "El valor de precio tiene que ser un numero mayor o igual a 0";
     }
 
-    db.collection('supermercado').updateOne({ codigo: parseInt(codigo) }, { $set: producto }).then((resultado) => {
+    db.collection('supermercado').updateOne({ _id: parseInt(id) }, { $set: producto }).then((resultado) => {
         if (resultado.matchedCount === 0) {
-            res.status(404).send(`No se encontro producto con el codigo proporcionado: ${codigo}`);
+            res.status(404).send(`No se encontro producto con el codigo proporcionado: ${id}`);
         } else {
             console.log('Producto modificado');
             res.status(200).send(log);
@@ -227,12 +239,12 @@ app.put('/supermercado/:codigo', async (req, res) => {
 
 }); 
 
-// DELETE /supermercado/:codigo
-app.delete('/supermercado/:codigo', async (req, res) => {
-    const codArt = parseInt(req.params.codigo);
-
-    if (isNaN(codArt)) {  
-        res.status(400).json({ error: 'El codigo debe ser un número válido' });
+// DELETE /supermercado/:id
+app.delete('/supermercado/:id', async (req, res) => {
+    const id = new ObjectId(req.params.id);
+    //transformo id en un nuevo objetoId (para que Mongo me tome la petición)
+    if (!ObjectId.isValid(id)) {
+        res.status(400).json({error: 'ID inválido'});
         return;
     }
 
@@ -243,40 +255,6 @@ app.delete('/supermercado/:codigo', async (req, res) => {
         return;
     }
 
-    client.connect()
-    .then(() => {
-        const catalogo = client.db('supermercado').collection('supermercado');    
-        return catalogo.deleteOne({codigo : codArt});
-    })
-    .then((resultado) => {
-        if (resultado.deletedCount === 0) {
-            res.status(404).json({error: 'No se ha encontrado el código solcitado', codArt});
-        } else {
-            console.log('Artículo eliminado')
-            res.status(204).json();
-        }
-    })
-    .catch(error => {
-        console.error(error);
-    })
-    .finally(() => {
-        disconnectFromMongoDB();
-    });
-});
-
-//DELETE: Eliminar elementos del catálago por _id
-app.delete('/supermercado/:id', async (req, res) => {
-    const id = new ObjectId(req.params.id);
-        //transformo id en un nuevo objetoId (para que Mongo me tome la petición)
-        if (!ObjectId.isValid(id)) {
-            res.status(400).json({error: 'ID inválido'});
-            return;
-        }
-    const client = await connectToMongoDB();
-        if (!client){
-            res.status(500).json({error: 'Error al conectar con la base de datos'});
-            return;
-        }
     client.connect()
     .then(() => {
         const catalogo = client.db('supermercado').collection('supermercado');    

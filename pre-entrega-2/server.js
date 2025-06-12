@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const { connectToMongoDB, disconnectFromMongoDB } = require('./src/mongodb');
 const PORT = process.env.PORT || 3000;
-const { ObjectId } = require('mongodb'); //Para poder hacer la busqueda por id
+const { ObjectId } = require('mongodb'); 
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
@@ -39,8 +39,8 @@ app.get('/supermercado', async (req, res) => {
     res.json(supermercado);
 });
 
-// GET /supermercado/:id
-app.get('/supermercado/:id', async (req,res)=>{
+// GET /supermercado/:codigo
+app.get('/supermercado/:codigo', async (req,res)=>{
     const productoId= parseInt(req.params.codigo)||0;
 
     const client = await connectToMongoDB();
@@ -147,12 +147,48 @@ app.post('/supermercado', async (req, res) => {
         res.status(500).send('Error al conectarse con MongoDB');
     }
 
+    producto = { }
+    log = { }
+
+    if (typeof nuevoProducto.codigo === 'number' && nuevoProducto.codigo > 0) {
+        producto.codigo = nuevoProducto.codigo;
+    } else {
+        // genera un codigo random para el producto
+        producto.codigo = Math.floor(1000 + Math.random() * 9000);
+        log.codigo = `El valor de precio tiene que ser un numero mayor a 0. Valor por defecto: ${producto.codigo}`;
+    }
+    
+    if (typeof nuevoProducto.nombre === 'string') {
+        producto.nombre = nuevoProducto.nombre;
+    }
+    else {
+        producto.nombre = "";
+        log.nombre = `El nombre del producto tiene que ser una cadena de caracteres valida. Valor por defecto: ${producto.nombre}`;
+    }
+     
+    if (typeof nuevoProducto.categoria === 'string') {
+        producto.categoria = nuevoProducto.categoria;
+    }
+    else {
+        producto.categoria = "";
+        log.categoria = `La categoria del producto tiene que ser una cadena de caracteres valida. Valor por defecto: ${producto.categoria}`;
+    }
+      
+
+    if (typeof nuevoProducto.precio === 'number' && nuevoProducto.precio >= 0) {
+        producto.precio = nuevoProducto.precio;
+    } else {
+        producto.precio = 0;
+        log.precio = `El valor de precio tiene que ser un numero mayor o igual a 0. Valor por defecto: ${producto.precio} `;
+    }
+
     const collection = client.db('supermercado').collection('supermercado');
     
-    collection.insertOne(nuevoProducto)
+    collection.insertOne(producto)
     .then(()=>{
         console.log('Nuevo producto creado');
-        res.status(201).send('Nuevo producto agregado correctamente');
+        log.mensaje = "Nuevo producto agregado correctamente";
+        res.status(201).send(log);
     })
     .catch(error =>{
         console.error(error);
@@ -165,12 +201,15 @@ app.post('/supermercado', async (req, res) => {
 
 // PUT /supermercado/:id
 app.put('/supermercado/:id', async (req, res) => {
-    const id = new ObjectId(req.params.id);
+    const idParametro = req.params.id;
 
-    if (!ObjectId.isValid(id)) {
-        res.status(400).json( {error: 'ID inválido'} );
+    if (!ObjectId.isValid(idParametro)) {
+        res.status(400).send(`El id: ${idParametro} no es válido`);
         return;
     }
+
+    const id = new ObjectId(idParametro);
+
     const nuevosDatos = req.body;
 
     if (!nuevosDatos) {
@@ -190,11 +229,14 @@ app.put('/supermercado/:id', async (req, res) => {
     producto = { }
     log = { }
 
-    if (nuevosDatos.codigo && (typeof nuevosDatos.codigo === 'number' && nuevosDatos.codigo > 0)) {
-        producto.codigo = nuevosDatos.codigo;
-        log.codigo = `Se modifico el codigo del producto: ${producto.codigo}`;
-    } else {
-        log.codigo = "El valor de codigo tiene que ser un numero mayor a 0";
+    if (nuevosDatos.codigo) {
+        if (typeof nuevosDatos.codigo === 'number' && nuevosDatos.codigo > 0) {
+            producto.codigo = nuevosDatos.codigo;
+            log.codigo = `Se modifico el codigo del producto: ${producto.codigo}`;
+        }
+        else {
+            log.codigo = "El valor de codigo tiene que ser un numero mayor a 0";
+        }
     }
 
     if (nuevosDatos.nombre) {
@@ -216,14 +258,16 @@ app.put('/supermercado/:id', async (req, res) => {
         }
     }   
 
-    if ((nuevosDatos.precio || nuevosDatos.precio === 0) && (typeof nuevosDatos.precio === 'number' && nuevosDatos.precio >= 0)) {
-        producto.precio = nuevosDatos.precio;
-        log.precio = `Se modifico el precio del producto: ${producto.precio}`;
-    } else {
-        log.precio = "El valor de precio tiene que ser un numero mayor o igual a 0";
+    if (nuevosDatos.precio || nuevosDatos.precio === 0) {
+        if (typeof nuevosDatos.precio === 'number' && nuevosDatos.precio >= 0) {
+            producto.precio = nuevosDatos.precio;
+            log.precio = `Se modifico el precio del producto: ${producto.precio}`;
+        } else {
+            log.precio = "El valor de precio tiene que ser un numero mayor o igual a 0";
+        }
     }
 
-    db.collection('supermercado').updateOne({ _id: parseInt(id) }, { $set: producto }).then((resultado) => {
+    db.collection('supermercado').updateOne({ _id: id }, { $set: producto }).then((resultado) => {
         if (resultado.matchedCount === 0) {
             res.status(404).send(`No se encontro producto con el codigo proporcionado: ${id}`);
         } else {
@@ -241,12 +285,21 @@ app.put('/supermercado/:id', async (req, res) => {
 
 // DELETE /supermercado/:id
 app.delete('/supermercado/:id', async (req, res) => {
-    const id = new ObjectId(req.params.id);
-    //transformo id en un nuevo objetoId (para que Mongo me tome la petición)
-    if (!ObjectId.isValid(id)) {
-        res.status(400).json({error: 'ID inválido'});
+    // const id = new ObjectId(req.params.id);
+
+    // if (!ObjectId.isValid(id)) {
+    //     res.status(400).json({error: 'ID inválido'});
+    //     return;
+    // }
+
+    const idParametro = req.params.id;
+
+    if (!ObjectId.isValid(idParametro)) {
+        res.status(400).send(`El id: ${idParametro} no es válido`);
         return;
     }
+
+    const id = new ObjectId(idParametro);
 
     const client = await connectToMongoDB();
 
